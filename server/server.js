@@ -1,18 +1,18 @@
-// http://127.0.0.1:1337/echo?message=Hello
 var http = require('http');
 var url = require('url');
 
-var server = new http.Server(function(req, res) {
+var server = http.createServer();
 
+server.on('request', function(req, res) {
   var urlParsed = url.parse(req.url, true);
 
-  if (urlParsed.pathname == '/echo' && urlParsed.query.message) {
-    res.setHeader('Cache-control', 'no-cache');
+  if (req.method == 'GET' && urlParsed.pathname == '/echo' && urlParsed.query.message) {
     res.end( urlParsed.query.message );
-  } else {
-    res.statusCode = 404;
-    res.end("Page not found");
+    return;
   }
+
+  res.statusCode = 404;
+  res.end("Page not found");
 });
 
-server.listen(1337, '127.0.0.1');
+server.listen(1337);
