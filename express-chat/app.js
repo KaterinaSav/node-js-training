@@ -41,7 +41,7 @@ app.use(function (req, res) {
 
 app.use(function (err, req, res, next) {
   if (app.get('env') === 'development'){
-    ar errorHandler = errorhandler();
+    var errorHandler = errorhandler();
     errorHandler(err, req, res, next);
   } else {
     res.send(500);
