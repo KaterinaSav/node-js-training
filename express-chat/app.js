@@ -5,10 +5,11 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-var engine = require('ejs-mate')
+var engine = require('ejs-mate');
+var HttpError = require('./error').HttpError;
 
 var routes = require('./routes/index');
-// var users = require('./routes/users');
+var users = require('./routes/users');
 
 var app = express();
 
@@ -27,16 +28,35 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(require('./middleware/sendHttpError'));
 //
 app.use('/', routes);
-// app.use('/users', users);
+app.use('/users', users);
 
-app.use(function (err, req, res, next) {
-  if (app.get('env') === 'development'){
-    var errorHandler = errorhandler();
-    errorHandler(err, req, res, next);
+
+app.use(function(req, res, next) {
+  var err = new Error('Not Found');
+  err.status = 404;
+  next(err);
+});
+
+app.use(function(err, req, res, next) {
+  if (typeof err == 'number'){
+    err = new HttpError(err);
+  }
+  if (err instanceof HttpError){
+    res.sendHttpError(err);
   } else {
-    res.send(500);
+    if (app.get('env') === 'development') {
+      res.status(err.status || 500);
+      res.render('error', {
+        message: err.message,
+        error: err
+      })
+    } else {
+      err = new HttpError(500);
+      res.sendHttpError(err);
+    }
   }
 });
 
