@@ -7,6 +7,9 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var engine = require('ejs-mate');
 var HttpError = require('./error').HttpError;
+var session = require('express-session');
+var mongoose = require('./lib/mongoose');
+var config = require('./config');
 
 var routes = require('./routes/index');
 var users = require('./routes/users');
@@ -28,6 +31,22 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+var MongoStore = require('connect-mongo')(session);
+
+app.use(session({
+  secret: config.get('session:secret'),
+  key: config.get('session:key'),
+  cookie: config.get('session:cookie'),
+  store: new MongoStore({mongooseConnection: mongoose.connection}),
+  resave: true,
+  saveUninitialized: true
+}));
+
+app.use(function (req, res, next) {
+  req.session.numberOfVisits = req.session.numberOfVisits + 1 || 1;
+  res.send("Visits: " + req.session.numberOfVisits);
+});
 app.use(require('./middleware/sendHttpError'));
 //
 app.use('/', routes);
