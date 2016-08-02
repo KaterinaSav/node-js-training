@@ -86,6 +86,32 @@ module.exports = function(server) {
 		});
 	});
 
+	io.on('session:reload', function(sid){
+    var clients = io.sockets.clients();
+
+		clients.forEach(function (client) {
+			if (client.handshake.session.id != sid) return;
+
+			LoadSession(sid, function (err, session) {
+				if (err) {
+					client.emit("error", "server error");
+					client.disconnect();
+					return;
+				}
+
+				if (!session) {
+					client.emit("error", "handshake unauthorized");
+					client.disconnect();
+					return;
+				}
+
+				client.handshake.session = session;
+			});
+
+		});
+
+	});
+
 	io.on('connection', function (socket) {
 		var username = socket.handshake.user.get('username');
 		socket.broadcast.emit('join', username);
@@ -99,5 +125,6 @@ module.exports = function(server) {
 			socket.broadcast.emit('leave', username);
 		});
 	});
-	
+
+	return io;
 }
