@@ -8,7 +8,6 @@ var bodyParser = require('body-parser');
 var engine = require('ejs-mate');
 var HttpError = require('./error').HttpError;
 var session = require('express-session');
-var mongoose = require('./lib/mongoose');
 var config = require('./config');
 
 var app = express();
@@ -29,13 +28,13 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-var MongoStore = require('connect-mongo')(session);
+var sessionStore = require('./lib/sessionStore');
 
 app.use(session({
   secret: config.get('session:secret'),
   key: config.get('session:key'),
   cookie: config.get('session:cookie'),
-  store: new MongoStore({mongooseConnection: mongoose.connection}),
+  store: sessionStore,
   resave: true,
   saveUninitialized: true
 }));
