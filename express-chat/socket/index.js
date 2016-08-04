@@ -40,6 +40,17 @@ function loadUser(session, callback) {
 
 }
 
+function findClientsSocket(ns) {
+  var res = []
+
+  if (ns) {
+    for (var id in ns.connected) {
+      res.push(ns.connected[id]);
+    }
+  }
+  return res;
+}
+
 module.exports = function(server) {
 	var io = require('socket.io')(server);
 	io.set('origins', 'localhost:*');
@@ -86,26 +97,27 @@ module.exports = function(server) {
 		});
 	});
 
-	io.on('session:reload', function(sid){
-    var clients = io.sockets.clients();
+	io.on('sessionReload', function(sid){
+    var namespace = io.of("/");
+    var clients = findClientsSocket(namespace);
 
-		clients.forEach(function (client) {
+    clients.forEach(function (client) {
 			if (client.handshake.session.id != sid) return;
 
-			LoadSession(sid, function (err, session) {
+			loadSession(sid, function(err, session) {
 				if (err) {
-					client.emit("error", "server error");
-					client.disconnect();
+          client.emit("error", "server error");
+          client.disconnect();
 					return;
 				}
 
 				if (!session) {
-					client.emit("error", "handshake unauthorized");
-					client.disconnect();
+          client.emit("logout");
+          client.disconnect();
 					return;
 				}
 
-				client.handshake.session = session;
+        client.handshake.session = session;
 			});
 
 		});
